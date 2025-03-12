@@ -42,10 +42,12 @@ namespace ControlGestionAPI.Controllers
     public class InputsController : Controller
     {
         private readonly IInputService _inputService;
+        private readonly IInputCalculationService _calculationService;
 
-        public InputsController(IInputService inputService)
+        public InputsController(IInputService inputService, IInputCalculationService calculationService)
         {
             _inputService = inputService;
+            _calculationService = calculationService;
         }
 
         [HttpGet("currentYear")]
@@ -63,73 +65,7 @@ namespace ControlGestionAPI.Controllers
                     return StatusCode(204, new { status = "error", message = "No existen registros!" });
                 }
 
-                var inputDtos = inputs.Select(input =>
-                {
-                    DateTime currentDate = DateTime.Now;
-                    int? diasAtraso = null;
-                    string mensajeAtraso = null;
-                    string estadoSemaforo = null;
-                    string colorSemaforo = null;
-
-                    if (input.FechaVencimiento.HasValue)
-                    {
-                        TimeSpan diffTime = input.FechaVencimiento.Value - currentDate;
-                        diasAtraso = (int)Math.Ceiling(diffTime.TotalDays);
-
-                        if (input.Seguimientos?.FechaAcuseRecibido.HasValue == true)
-                        {
-                            TimeSpan diffTimeAcuse = input.FechaVencimiento.Value - input.Seguimientos.FechaAcuseRecibido.Value;
-                            diasAtraso = (int)Math.Ceiling(diffTimeAcuse.TotalDays);
-                        }
-                    }
-                    else
-                    {
-                        mensajeAtraso = "Fecha de vencimiento no establecida.";
-                    }
-
-                    if (diasAtraso.HasValue)
-                    {
-                        if (diasAtraso > 3)
-                        {
-                            estadoSemaforo = "verde";
-                            colorSemaforo = "#A5D6A7";
-                        }
-                        else if (diasAtraso >= 0)
-                        {
-                            estadoSemaforo = "amarillo";
-                            colorSemaforo = "#FFF59D";
-                        }
-                        else
-                        {
-                            estadoSemaforo = "rojo";
-                            colorSemaforo = "#EF9A9A";
-                        }
-                    }
-
-                    return new InputDto
-                    {
-                        Id = input.Id,
-                        Anio = input.Anio,
-                        Folio = input.Folio,
-                        NumOficio = input.NumOficio,
-                        FechaRecepcion = input.FechaRecepcion,
-                        FechaVencimiento = input.FechaVencimiento,
-                        Asignado = input.Asignado,
-                        Asunto = input.Asunto,
-                        Estatus = input.Estatus,
-                        Remitente = input.Remitente,
-                        InstitucionOrigen = input.InstitucionOrigen,
-                        Seguimientos = new SeguimientosDto
-                        {
-                            AtencionOtorgada = input.Seguimientos?.AtencionOtorgada,
-                            FechaAcuseRecibido = input.Seguimientos?.FechaAcuseRecibido
-                        },
-                        DiasAtraso = diasAtraso,
-                        MensajeAtraso = mensajeAtraso,
-                        EstadoSemaforo = estadoSemaforo,
-                        ColorSemaforo = colorSemaforo
-                    };
-                }).ToList();
+                var inputDtos = inputs.Select(input => _calculationService.CalculateInputDto(input)).ToList();
 
                 return Ok(new { status = "success", totalInputs = totalInputs, inputs = inputDtos });
             }
@@ -159,73 +95,7 @@ namespace ControlGestionAPI.Controllers
                     return StatusCode(204);
                 }
 
-                var inputDtos = inputs.Select(input =>
-                {
-                    DateTime currentDate = DateTime.Now;
-                    int? diasAtraso = null;
-                    string mensajeAtraso = null;
-                    string estadoSemaforo = null;
-                    string colorSemaforo = null;
-
-                    if (input.FechaVencimiento.HasValue)
-                    {
-                        TimeSpan diffTime = input.FechaVencimiento.Value - currentDate;
-                        diasAtraso = (int)Math.Ceiling(diffTime.TotalDays);
-
-                        if (input.Seguimientos?.FechaAcuseRecibido.HasValue == true)
-                        {
-                            TimeSpan diffTimeAcuse = input.FechaVencimiento.Value - input.Seguimientos.FechaAcuseRecibido.Value;
-                            diasAtraso = (int)Math.Ceiling(diffTimeAcuse.TotalDays);
-                        }
-                    }
-                    else
-                    {
-                        mensajeAtraso = "Fecha de vencimiento no establecida.";
-                    }
-
-                    if (diasAtraso.HasValue)
-                    {
-                        if (diasAtraso > 3)
-                        {
-                            estadoSemaforo = "verde";
-                            colorSemaforo = "#A5D6A7";
-                        }
-                        else if (diasAtraso >= 0)
-                        {
-                            estadoSemaforo = "amarillo";
-                            colorSemaforo = "#FFF59D";
-                        }
-                        else
-                        {
-                            estadoSemaforo = "rojo";
-                            colorSemaforo = "#EF9A9A";
-                        }
-                    }
-
-                    return new InputDto
-                    {
-                        Id = input.Id,
-                        Anio = input.Anio,
-                        Folio = input.Folio,
-                        NumOficio = input.NumOficio,
-                        FechaRecepcion = input.FechaRecepcion,
-                        FechaVencimiento = input.FechaVencimiento,
-                        Asignado = input.Asignado,
-                        Asunto = input.Asunto,
-                        Estatus = input.Estatus,
-                        Remitente = input.Remitente,
-                        InstitucionOrigen = input.InstitucionOrigen,
-                        Seguimientos = new SeguimientosDto
-                        {
-                            AtencionOtorgada = input.Seguimientos?.AtencionOtorgada,
-                            FechaAcuseRecibido = input.Seguimientos?.FechaAcuseRecibido
-                        },
-                        DiasAtraso = diasAtraso,
-                        MensajeAtraso = mensajeAtraso,
-                        EstadoSemaforo = estadoSemaforo,
-                        ColorSemaforo = colorSemaforo
-                    };
-                }).ToList();
+                var inputDtos = inputs.Select(input => _calculationService.CalculateInputDto(input)).ToList();
 
                 return Ok(new { status = "success", totalInputs = totalInputs, inputs = inputDtos });
             }
@@ -266,73 +136,7 @@ namespace ControlGestionAPI.Controllers
                     return Ok(new { status = "success", message = "No se encontraron registros para el año especificado.", inputs = new List<InputDto>(), totalInputs = 0 });
                 }
 
-                var inputDtos = inputs.Select(input =>
-                {
-                    DateTime currentDate = DateTime.Now;
-                    int? diasAtraso = null;
-                    string mensajeAtraso = null;
-                    string estadoSemaforo = null;
-                    string colorSemaforo = null;
-
-                    if (input.FechaVencimiento.HasValue)
-                    {
-                        TimeSpan diffTime = input.FechaVencimiento.Value - currentDate;
-                        diasAtraso = (int)Math.Ceiling(diffTime.TotalDays);
-
-                        if (input.Seguimientos?.FechaAcuseRecibido.HasValue == true)
-                        {
-                            TimeSpan diffTimeAcuse = input.FechaVencimiento.Value - input.Seguimientos.FechaAcuseRecibido.Value;
-                            diasAtraso = (int)Math.Ceiling(diffTimeAcuse.TotalDays);
-                        }
-                    }
-                    else
-                    {
-                        mensajeAtraso = "Fecha de vencimiento no establecida.";
-                    }
-
-                    if (diasAtraso.HasValue)
-                    {
-                        if (diasAtraso > 3)
-                        {
-                            estadoSemaforo = "verde";
-                            colorSemaforo = "#A5D6A7";
-                        }
-                        else if (diasAtraso >= 0)
-                        {
-                            estadoSemaforo = "amarillo";
-                            colorSemaforo = "#FFF59D";
-                        }
-                        else
-                        {
-                            estadoSemaforo = "rojo";
-                            colorSemaforo = "#EF9A9A";
-                        }
-                    }
-
-                    return new InputDto
-                    {
-                        Id = input.Id,
-                        Anio = input.Anio,
-                        Folio = input.Folio,
-                        NumOficio = input.NumOficio,
-                        FechaRecepcion = input.FechaRecepcion,
-                        FechaVencimiento = input.FechaVencimiento,
-                        Asignado = input.Asignado,
-                        Asunto = input.Asunto,
-                        Estatus = input.Estatus,
-                        Remitente = input.Remitente,
-                        InstitucionOrigen = input.InstitucionOrigen,
-                        Seguimientos = new SeguimientosDto
-                        {
-                            AtencionOtorgada = input.Seguimientos?.AtencionOtorgada,
-                            FechaAcuseRecibido = input.Seguimientos?.FechaAcuseRecibido
-                        },
-                        DiasAtraso = diasAtraso,
-                        MensajeAtraso = mensajeAtraso,
-                        EstadoSemaforo = estadoSemaforo,
-                        ColorSemaforo = colorSemaforo
-                    };
-                }).ToList();
+                var inputDtos = inputs.Select(input => _calculationService.CalculateInputDto(input)).ToList();
 
                 return Ok(new { status = "success", totalInputs = totalInputs, inputs = inputDtos });
             }
@@ -378,73 +182,7 @@ namespace ControlGestionAPI.Controllers
                     return Ok(new { status = "success", message = "No se encontraron registros para el año especificado.", inputs = new List<InputDto>(), totalInputs = 0 });
                 }
 
-                var inputDtos = inputs.Select(input =>
-                {
-                    DateTime currentDate = DateTime.Now;
-                    int? diasAtraso = null;
-                    string mensajeAtraso = null;
-                    string estadoSemaforo = null;
-                    string colorSemaforo = null;
-
-                    if (input.FechaVencimiento.HasValue)
-                    {
-                        TimeSpan diffTime = input.FechaVencimiento.Value - currentDate;
-                        diasAtraso = (int)Math.Ceiling(diffTime.TotalDays);
-
-                        if (input.Seguimientos?.FechaAcuseRecibido.HasValue == true)
-                        {
-                            TimeSpan diffTimeAcuse = input.FechaVencimiento.Value - input.Seguimientos.FechaAcuseRecibido.Value;
-                            diasAtraso = (int)Math.Ceiling(diffTimeAcuse.TotalDays);
-                        }
-                    }
-                    else
-                    {
-                        mensajeAtraso = "Fecha de vencimiento no establecida.";
-                    }
-
-                    if (diasAtraso.HasValue)
-                    {
-                        if (diasAtraso > 3)
-                        {
-                            estadoSemaforo = "verde";
-                            colorSemaforo = "#A5D6A7";
-                        }
-                        else if (diasAtraso >= 0)
-                        {
-                            estadoSemaforo = "amarillo";
-                            colorSemaforo = "#FFF59D";
-                        }
-                        else
-                        {
-                            estadoSemaforo = "rojo";
-                            colorSemaforo = "#EF9A9A";
-                        }
-                    }
-
-                    return new InputDto
-                    {
-                        Id = input.Id,
-                        Anio = input.Anio,
-                        Folio = input.Folio,
-                        NumOficio = input.NumOficio,
-                        FechaRecepcion = input.FechaRecepcion,
-                        FechaVencimiento = input.FechaVencimiento,
-                        Asignado = input.Asignado,
-                        Asunto = input.Asunto,
-                        Estatus = input.Estatus,
-                        Remitente = input.Remitente,
-                        InstitucionOrigen = input.InstitucionOrigen,
-                        Seguimientos = new SeguimientosDto
-                        {
-                            AtencionOtorgada = input.Seguimientos?.AtencionOtorgada,
-                            FechaAcuseRecibido = input.Seguimientos?.FechaAcuseRecibido
-                        },
-                        DiasAtraso = diasAtraso,
-                        MensajeAtraso = mensajeAtraso,
-                        EstadoSemaforo = estadoSemaforo,
-                        ColorSemaforo = colorSemaforo
-                    };
-                }).ToList();
+                var inputDtos = inputs.Select(input => _calculationService.CalculateInputDto(input)).ToList();
 
                 return Ok(new { status = "success", totalInputs = totalInputs, inputs = inputDtos });
             }

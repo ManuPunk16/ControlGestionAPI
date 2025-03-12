@@ -16,6 +16,9 @@ builder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection("Mo
 // Register InputService as a singleton
 builder.Services.AddSingleton<IInputService, InputService>();
 
+// Registra InputCalculationService como un scoped
+builder.Services.AddScoped<IInputCalculationService, InputCalculationService>();
+
 // Register MongoClient as a singleton
 builder.Services.AddSingleton<IMongoClient>(sp =>
 {
