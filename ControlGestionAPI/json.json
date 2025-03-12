@@ -1,0 +1,37 @@
+//Estructura del Proyecto C# (ASP.NET Core Web API):
+
+//ControlGestionBackend.sln         // Solución de Visual Studio
+//└── ControlGestionBackend/       // Proyecto ASP.NET Core Web API
+//    ├── Controllers/
+//    │   ├── AreaController.cs
+//    │   ├── AuthController.cs
+//    │   ├── InputController.cs
+//    │   ├── InstitutionController.cs
+//    │   ├── InstrumentController.cs
+//    │   ├── RoleController.cs
+//    │   └── UserController.cs
+//    ├── Data/
+//    │   ├── ApplicationDbContext.cs     // Contexto de Entity Framework Core
+//    │   └── Models/
+//    │       ├── Area.cs
+//    │       ├── Input.cs
+//    │       ├── Institution.cs
+//    │       ├── Instrument.cs
+//    │       ├── Output.cs
+//    │       ├── Role.cs
+//    │       └── User.cs
+//    ├── Middleware/
+//    │   ├── AuthJwtMiddleware.cs
+//    │   ├── VerifySignUpMiddleware.cs
+//    ├── Services/
+//    │   ├── ExcelDailyReportService.cs
+//    │   ├── ExcelFullDataService.cs
+//    │   └── ExcelResumeReportService.cs
+//    ├── Utils/
+//    │   ├── ErrorHandler.cs
+//    │   ├── AreaInitializer.cs
+//    │   ├── RoleInitializer.cs
+//    │   └── Logger.cs
+//    ├── appsettings.json
+//    ├── Program.cs
+//    └── Startup.cs
