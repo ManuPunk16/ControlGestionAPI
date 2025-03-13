@@ -53,7 +53,6 @@ namespace ControlGestionAPI.Controllers
 
             if (request.Roles != null && request.Roles.Count > 0)
             {
-                // Obtener los roles por sus IDs
                 foreach (var roleId in request.Roles)
                 {
                     var role = await _roleService.GetRoleById(roleId);
@@ -86,60 +85,49 @@ namespace ControlGestionAPI.Controllers
         [HttpPost("signin")]
         public async Task<IActionResult> Signin([FromBody] SigninRequest request)
         {
-            try
+            if (string.IsNullOrEmpty(request.Username))
             {
-                // Validate username
-                if (string.IsNullOrEmpty(request.Username))
-                {
-                    return BadRequest(new { message = "Username is required!" });
-                }
-
-                // Find user by username
-                var user = await _userService.GetUserByUsername(request.Username);
-                if (user == null)
-                {
-                    return Unauthorized(new { message = "Invalid username or password!" });
-                }
-
-                // Validate password
-                var passwordIsValid = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);
-                if (!passwordIsValid)
-                {
-                    return Unauthorized(new { message = "Invalid username or password!" });
-                }
-
-                var accessToken = _authService.GenerateJwtToken(user);
-                var refreshToken = _authService.GenerateRefreshToken(user);
-                var refreshTokenExpirationDays = _configuration.GetValue<int>("Jwt:RefreshTokenExpirationDays");
-
-                var cookieOptions = new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = Request.IsHttps,
-                    SameSite = SameSiteMode.Strict,
-                    MaxAge = TimeSpan.FromDays(refreshTokenExpirationDays)
-                };
-
-                Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
-
-                // Project roles to the desired format
-                var roles = user.PopulatedRoles.Select(role => role.Name).ToList();
-
-                return Ok(new SigninResponse
-                {
-                    Id = user.Id,
-                    Name = user.Name,
-                    Username = user.Username,
-                    Email = user.Email,
-                    Area = user.Area,
-                    Roles = roles,
-                    AccessToken = accessToken
-                });
+                return BadRequest(new { message = "Username is required!" });
             }
-            catch (Exception ex)
+
+            var user = await _userService.GetUserByUsername(request.Username);
+            if (user == null)
             {
-                return StatusCode(500, new { message = "An error occurred during signin.", error = ex.Message });
+                return Unauthorized(new { message = "Invalid username or password!" });
             }
+
+            var passwordIsValid = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);
+            if (!passwordIsValid)
+            {
+                return Unauthorized(new { message = "Invalid username or password!" });
+            }
+
+            var accessToken = _authService.GenerateJwtToken(user);
+            var refreshToken = _authService.GenerateRefreshToken(user);
+            var refreshTokenExpirationDays = _configuration.GetValue<int>("Jwt:RefreshTokenExpirationDays");
+
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = Request.IsHttps,
+                SameSite = SameSiteMode.Strict,
+                MaxAge = TimeSpan.FromDays(refreshTokenExpirationDays)
+            };
+
+            Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+
+            var roles = user.PopulatedRoles.Select(role => role.Name).ToList();
+
+            return Ok(new SigninResponse
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Username = user.Username,
+                Email = user.Email,
+                Area = user.Area,
+                Roles = roles,
+                AccessToken = accessToken
+            });
         }
 
         [HttpPost("refresh-token")]
@@ -151,49 +139,38 @@ namespace ControlGestionAPI.Controllers
                 return Unauthorized();
             }
 
-            try
+            var principal = _authService.VerifyRefreshToken(refreshToken);
+            if (principal == null)
             {
-                var principal = _authService.VerifyRefreshToken(refreshToken);
-                if (principal == null)
-                {
-                    return Forbid("Invalid refresh token."); // Or return Unauthorized(); depending on the desired behavior
-                }
-
-                var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || string.IsNullOrEmpty(userIdClaim.Value))
-                {
-                    return BadRequest("Invalid refresh token.");
-                }
-
-                string userId = userIdClaim.Value;
-
-                var user = await _userService.GetUserById(userId);
-                if (user == null)
-                {
-                    return NotFound();
-                }
-
-                var accessToken = _authService.GenerateJwtToken(user);
-                var newRefreshToken = _authService.GenerateRefreshToken(user);
-
-                Response.Cookies.Append("refreshToken", newRefreshToken, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = Request.IsHttps,
-                    SameSite = SameSiteMode.Strict,
-                    MaxAge = TimeSpan.FromDays(_authService.GetRefreshTokenExpirationDays())
-                });
-
-                return Ok(new { accessToken });
+                return Forbid("Invalid refresh token.");
             }
-            catch (SecurityTokenException) // Catch specific JWT exceptions
+
+            var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || string.IsNullOrEmpty(userIdClaim.Value))
             {
-                return Forbid("Invalid refresh token."); // Or return Unauthorized();
+                return BadRequest("Invalid refresh token.");
             }
-            catch (Exception)
+
+            string userId = userIdClaim.Value;
+
+            var user = await _userService.GetUserById(userId);
+            if (user == null)
             {
-                return StatusCode(500, "An error occurred while refreshing the token."); // Handle other potential exceptions
+                return NotFound();
             }
+
+            var accessToken = _authService.GenerateJwtToken(user);
+            var newRefreshToken = _authService.GenerateRefreshToken(user);
+
+            Response.Cookies.Append("refreshToken", newRefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = Request.IsHttps,
+                SameSite = SameSiteMode.Strict,
+                MaxAge = TimeSpan.FromDays(_authService.GetRefreshTokenExpirationDays())
+            });
+
+            return Ok(new { accessToken });
         }
 
         [HttpPost("logout")]

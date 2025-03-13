@@ -1,12 +1,10 @@
 ﻿using ControlGestionAPI.Models;
 using ControlGestionAPI.Services;
-using ControlGestionAPI.Settings;
-using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ControlGestionAPI.Controllers
@@ -39,7 +37,7 @@ namespace ControlGestionAPI.Controllers
 
     [ApiController]
     [Route("api/[controller]")]
-    public class InputsController : Controller
+    public class InputsController : ControllerBase
     {
         private readonly IInputService _inputService;
         private readonly IInputCalculationService _calculationService;
@@ -53,26 +51,19 @@ namespace ControlGestionAPI.Controllers
         [HttpGet("currentYear")]
         public async Task<ActionResult<object>> GetNoDeletedInputsInCurrentYear()
         {
-            try
+            int currentYear = DateTime.Now.Year;
+            var inputs = await _inputService.GetInputsAsync(currentYear);
+
+            long totalInputs = inputs.Count;
+
+            if (inputs.Count == 0)
             {
-                int currentYear = DateTime.Now.Year;
-                var inputs = await _inputService.GetInputsAsync(currentYear);
-
-                long totalInputs = inputs.Count;
-
-                if (inputs.Count == 0)
-                {
-                    return StatusCode(204, new { status = "error", message = "No existen registros!" });
-                }
-
-                var inputDtos = inputs.Select(input => _calculationService.CalculateInputDto(input)).ToList();
-
-                return Ok(new { status = "success", totalInputs = totalInputs, inputs = inputDtos });
+                return StatusCode(204, new { status = "error", message = "No existen registros!" });
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { status = "error", message = "Error al devolver el registro.", error = ex.Message });
-            }
+
+            var inputDtos = inputs.Select(input => _calculationService.CalculateInputDto(input)).ToList();
+
+            return Ok(new { status = "success", totalInputs = totalInputs, inputs = inputDtos });
         }
 
         [HttpGet("currentYearByArea")]
@@ -83,26 +74,19 @@ namespace ControlGestionAPI.Controllers
                 return BadRequest(new { status = "error", message = "El parámetro 'area' es requerido (query)." });
             }
 
-            try
+            int currentYear = DateTime.Now.Year;
+            var inputs = await _inputService.GetInputsByYearAndAreaAsync(currentYear, area);
+
+            long totalInputs = inputs.Count;
+
+            if (inputs.Count == 0)
             {
-                int currentYear = DateTime.Now.Year;
-                var inputs = await _inputService.GetInputsByYearAndAreaAsync(currentYear, area);
-
-                long totalInputs = inputs.Count;
-
-                if (inputs.Count == 0)
-                {
-                    return StatusCode(204);
-                }
-
-                var inputDtos = inputs.Select(input => _calculationService.CalculateInputDto(input)).ToList();
-
-                return Ok(new { status = "success", totalInputs = totalInputs, inputs = inputDtos });
+                return StatusCode(204);
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { status = "error", message = "Error al devolver el registro.", error = ex.Message });
-            }
+
+            var inputDtos = inputs.Select(input => _calculationService.CalculateInputDto(input)).ToList();
+
+            return Ok(new { status = "success", totalInputs = totalInputs, inputs = inputDtos });
         }
 
         [HttpGet("inputsByYear")]
@@ -125,25 +109,18 @@ namespace ControlGestionAPI.Controllers
                 return BadRequest(new { status = "error", message = $"El año debe ser un número entre 2021 y {currentYearMinusOne}." });
             }
 
-            try
+            var inputs = await _inputService.GetInputsByYearAsync(anio);
+
+            long totalInputs = inputs.Count;
+
+            if (inputs.Count == 0)
             {
-                var inputs = await _inputService.GetInputsByYearAsync(anio);
-
-                long totalInputs = inputs.Count;
-
-                if (inputs.Count == 0)
-                {
-                    return Ok(new { status = "success", message = "No se encontraron registros para el año especificado.", inputs = new List<InputDto>(), totalInputs = 0 });
-                }
-
-                var inputDtos = inputs.Select(input => _calculationService.CalculateInputDto(input)).ToList();
-
-                return Ok(new { status = "success", totalInputs = totalInputs, inputs = inputDtos });
+                return Ok(new { status = "success", message = "No se encontraron registros para el año especificado.", inputs = new List<InputDto>(), totalInputs = 0 });
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { status = "error", message = "Error al devolver el registro.", error = ex.Message });
-            }
+
+            var inputDtos = inputs.Select(input => _calculationService.CalculateInputDto(input)).ToList();
+
+            return Ok(new { status = "success", totalInputs = totalInputs, inputs = inputDtos });
         }
 
         [HttpGet("inputsByYearByArea")]
@@ -171,25 +148,18 @@ namespace ControlGestionAPI.Controllers
                 return BadRequest(new { status = "error", message = $"El año debe ser un número entre 2021 y {currentYearMinusOne}." });
             }
 
-            try
+            var inputs = await _inputService.GetInputsByYearAndAreaAsync(anio, area);
+
+            long totalInputs = inputs.Count;
+
+            if (inputs.Count == 0)
             {
-                var inputs = await _inputService.GetInputsByYearAndAreaAsync(anio, area);
-
-                long totalInputs = inputs.Count;
-
-                if (inputs.Count == 0)
-                {
-                    return Ok(new { status = "success", message = "No se encontraron registros para el año especificado.", inputs = new List<InputDto>(), totalInputs = 0 });
-                }
-
-                var inputDtos = inputs.Select(input => _calculationService.CalculateInputDto(input)).ToList();
-
-                return Ok(new { status = "success", totalInputs = totalInputs, inputs = inputDtos });
+                return Ok(new { status = "success", message = "No se encontraron registros para el año especificado.", inputs = new List<InputDto>(), totalInputs = 0 });
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { status = "error", message = "Error al devolver el registro.", error = ex.Message });
-            }
+
+            var inputDtos = inputs.Select(input => _calculationService.CalculateInputDto(input)).ToList();
+
+            return Ok(new { status = "success", totalInputs = totalInputs, inputs = inputDtos });
         }
     }
 }

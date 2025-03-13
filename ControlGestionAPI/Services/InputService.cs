@@ -15,21 +15,14 @@ namespace ControlGestionAPI.Services
             _inputsCollection = database.GetCollection<Input>("inputsnuevos");
         }
 
-        public async Task<List<Input>> GetInputsAsync(int? year = null)
+        private FilterDefinition<Input> GetBaseFilter()
         {
-            var filterBuilder = Builders<Input>.Filter;
-            var filter = filterBuilder.Eq(x => x.Deleted, false);
+            return Builders<Input>.Filter.Eq(x => x.Deleted, false);
+        }
 
-            if (year.HasValue)
-            {
-                filter = filter & filterBuilder.Eq(x => x.Anio, year.Value);
-            }
-            else
-            {
-                filter = filter & filterBuilder.Eq(x => x.Anio, DateTime.Now.Year);
-            }
-
-            var projection = Builders<Input>.Projection
+        private ProjectionDefinition<Input> GetBaseProjection()
+        {
+            return Builders<Input>.Projection
                 .Include(x => x.Id)
                 .Include(x => x.Anio)
                 .Include(x => x.Folio)
@@ -41,77 +34,71 @@ namespace ControlGestionAPI.Services
                 .Include(x => x.Estatus)
                 .Include(x => x.Remitente)
                 .Include(x => x.InstitucionOrigen)
-                .Include("seguimientos.atencion_otorgada") // Include nested field
-                .Include("seguimientos.fecha_acuse_recibido"); // Include nested field
+                .Include("seguimientos.atencion_otorgada")
+                .Include("seguimientos.fecha_acuse_recibido");
+        }
 
-            return await _inputsCollection.Find(filter)
-                .Project<Input>(projection)
-                .SortByDescending(x => x.Anio)
-                .ThenByDescending(x => x.Folio)
-                .ThenByDescending(x => x.FechaRecepcion)
-                .ThenByDescending(x => x.CreatedAt)
-                .ToListAsync();
+        private SortDefinition<Input> GetBaseSort()
+        {
+            return Builders<Input>.Sort
+                .Descending(x => x.Anio)
+                .Descending(x => x.Folio)
+                .Descending(x => x.FechaRecepcion)
+                .Descending(x => x.CreatedAt);
+        }
+
+        public async Task<List<Input>> GetInputsAsync(int? year = null)
+        {
+            var filter = GetBaseFilter();
+
+            if (year.HasValue)
+            {
+                filter &= Builders<Input>.Filter.Eq(x => x.Anio, year.Value);
+            }
+            else
+            {
+                filter &= Builders<Input>.Filter.Eq(x => x.Anio, DateTime.Now.Year);
+            }
+
+            var projection = GetBaseProjection();
+            var sort = GetBaseSort();
+
+            var findOptions = new FindOptions<Input> { Projection = projection, Sort = sort };
+
+            using (var cursor = await _inputsCollection.FindAsync(filter, findOptions))
+            {
+                return await cursor.ToListAsync();
+            }
         }
 
         public async Task<List<Input>> GetInputsByYearAndAreaAsync(int year, string area)
         {
-            var filterBuilder = Builders<Input>.Filter;
-            var filter = filterBuilder.Eq(x => x.Deleted, false) &
-                         filterBuilder.Eq(x => x.Anio, year) &
-                         filterBuilder.Eq(x => x.Asignado, area);
+            var filter = GetBaseFilter() & Builders<Input>.Filter.Eq(x => x.Anio, year) & Builders<Input>.Filter.Eq(x => x.Asignado, area);
 
-            var projection = Builders<Input>.Projection
-                .Include(x => x.Id)
-                .Include(x => x.Anio)
-                .Include(x => x.Folio)
-                .Include(x => x.NumOficio)
-                .Include(x => x.FechaRecepcion)
-                .Include(x => x.FechaVencimiento)
-                .Include(x => x.Asignado)
-                .Include(x => x.Asunto)
-                .Include(x => x.Estatus)
-                .Include(x => x.Remitente)
-                .Include(x => x.InstitucionOrigen)
-                .Include("seguimientos.atencion_otorgada")
-                .Include("seguimientos.fecha_acuse_recibido");
+            var projection = GetBaseProjection();
+            var sort = GetBaseSort();
 
-            return await _inputsCollection.Find(filter)
-                .Project<Input>(projection)
-                .SortByDescending(x => x.Anio)
-                .ThenByDescending(x => x.Folio)
-                .ThenByDescending(x => x.FechaRecepcion)
-                .ThenByDescending(x => x.CreatedAt)
-                .ToListAsync();
+            var findOptions = new FindOptions<Input> { Projection = projection, Sort = sort };
+
+            using (var cursor = await _inputsCollection.FindAsync(filter, findOptions))
+            {
+                return await cursor.ToListAsync();
+            }
         }
 
         public async Task<List<Input>> GetInputsByYearAsync(int year)
         {
-            var filterBuilder = Builders<Input>.Filter;
-            var filter = filterBuilder.Eq(x => x.Deleted, false) &
-                         filterBuilder.Eq(x => x.Anio, year);
+            var filter = GetBaseFilter() & Builders<Input>.Filter.Eq(x => x.Anio, year);
 
-            var projection = Builders<Input>.Projection
-                .Include(x => x.Id)
-                .Include(x => x.Anio)
-                .Include(x => x.Folio)
-                .Include(x => x.NumOficio)
-                .Include(x => x.FechaRecepcion)
-                .Include(x => x.FechaVencimiento)
-                .Include(x => x.Asignado)
-                .Include(x => x.Asunto)
-                .Include(x => x.Estatus)
-                .Include(x => x.Remitente)
-                .Include(x => x.InstitucionOrigen)
-                .Include("seguimientos.atencion_otorgada")
-                .Include("seguimientos.fecha_acuse_recibido");
+            var projection = GetBaseProjection();
+            var sort = GetBaseSort();
 
-            return await _inputsCollection.Find(filter)
-                .Project<Input>(projection)
-                .SortByDescending(x => x.Anio)
-                .ThenByDescending(x => x.Folio)
-                .ThenByDescending(x => x.FechaRecepcion)
-                .ThenByDescending(x => x.CreatedAt)
-                .ToListAsync();
+            var findOptions = new FindOptions<Input> { Projection = projection, Sort = sort };
+
+            using (var cursor = await _inputsCollection.FindAsync(filter, findOptions))
+            {
+                return await cursor.ToListAsync();
+            }
         }
     }
 }

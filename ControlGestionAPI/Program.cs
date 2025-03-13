@@ -1,3 +1,4 @@
+using ControlGestionAPI.Middleware;
 using ControlGestionAPI.Services;
 using ControlGestionAPI.Settings;
 using Microsoft.Extensions.Options;
@@ -48,6 +49,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<ErrorHandlerMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
