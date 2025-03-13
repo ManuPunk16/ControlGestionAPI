@@ -77,6 +77,10 @@ namespace ControlGestionAPI.Models
 
         [BsonElement("updatedAt")]
         public DateTime UpdatedAt { get; set; }
+
+        [BsonElement("__v")]
+        public int? V { get; set; }
+
     }
 
     public class UserRef
@@ -95,7 +99,7 @@ namespace ControlGestionAPI.Models
         public string Oficio_salida { get; set; }
 
         [BsonElement("fecha_respuesta")]
-        public DateTime FechaRepuesta { get; set; }
+        public DateTime? FechaRepuesta { get; set; }
 
         [BsonElement("usuario")]
         public UserRef Usuario { get; set; }
@@ -132,5 +136,15 @@ namespace ControlGestionAPI.Models
 
         [BsonElement("firma_visado")]
         public string? FirmaVisado { get; set; }
+
+        [BsonElement("_id")]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? Id { get; set; }
+
+        [BsonElement("createdAt")]
+        public DateTime CreatedAt { get; set; }
+
+        [BsonElement("updatedAt")]
+        public DateTime UpdatedAt { get; set; }
     }
 }

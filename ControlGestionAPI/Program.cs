@@ -19,6 +19,11 @@ builder.Services.AddSingleton<IInputService, InputService>();
 // Registra InputCalculationService como un scoped
 builder.Services.AddScoped<IInputCalculationService, InputCalculationService>();
 
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 // Register MongoClient as a singleton
 builder.Services.AddSingleton<IMongoClient>(sp =>
 {
