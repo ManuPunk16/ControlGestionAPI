@@ -3,16 +3,22 @@ using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
+using ControlGestionAPI.Exceptions;
 
 namespace ControlGestionAPI.Services
 {
     public class InputService : IInputService
     {
         private readonly IMongoCollection<Input> _inputsCollection;
+        private readonly IMongoDatabase _database;
+        private readonly MongoDBSettings _settings;
 
-        public InputService(IMongoDatabase database)
+        public InputService(IMongoClient client, IOptions<MongoDBSettings> options)
         {
-            _inputsCollection = database.GetCollection<Input>("inputsnuevos");
+            _settings = options.Value;
+            _database = client.GetDatabase(_settings.DatabaseName);
+            _inputsCollection = _database.GetCollection<Input>("inputsnuevos");
         }
 
         private FilterDefinition<Input> GetBaseFilter()
@@ -97,7 +103,12 @@ namespace ControlGestionAPI.Services
 
             using (var cursor = await _inputsCollection.FindAsync(filter, findOptions))
             {
-                return await cursor.ToListAsync();
+                var inputs = await cursor.ToListAsync();
+                if (inputs.Count == 0)
+                {
+                    throw new NotFoundException($"No se encontraron registros para el año {year}.");
+                }
+                return inputs;
             }
         }
     }

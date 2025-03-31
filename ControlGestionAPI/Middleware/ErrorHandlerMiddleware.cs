@@ -28,26 +28,23 @@ namespace ControlGestionAPI.Middleware
             {
                 var response = context.Response;
                 response.ContentType = "application/json";
-                var responseModel = new { message = error?.Message };
 
                 switch (error)
                 {
-                    case KeyNotFoundException e:
-                        // not found error
+                    case Exceptions.NotFoundException e:
+                        // custom application error
                         response.StatusCode = (int)HttpStatusCode.NotFound;
-                        break;
-                    case UnauthorizedAccessException e:
-                        // unauthorize error
-                        response.StatusCode = (int)HttpStatusCode.Unauthorized;
                         break;
                     default:
                         // unhandled error
                         response.StatusCode = (int)HttpStatusCode.InternalServerError;
                         break;
                 }
-                var result = JsonSerializer.Serialize(responseModel);
+
+                var result = JsonSerializer.Serialize(new { message = error?.Message });
                 await response.WriteAsync(result);
-                _logger.LogError(error, error.Message);
+
+                _logger.LogError(error, "Ocurrió un error");
             }
         }
     }
